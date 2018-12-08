@@ -1,16 +1,17 @@
 # example
 
-A new Flutter project.
+this is just a simple Image that can use prePlaceHolder and errPlaceHolder.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+just use like Image:
+```dart
+SakaImage.urlWithPlaceHolder(
+  "http://img.rangaofei.cn/01b18.jpg",
+  errPlaceHolder: "images/error.jpeg",
+  prePlaceHolder: "images/splash.jpg",
+  preDuration: Duration(seconds: 5),
+  fit: BoxFit.cover,
+);
+```
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.io/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.io/docs/cookbook)
-
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.io/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
