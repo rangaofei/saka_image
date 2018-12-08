@@ -28,12 +28,11 @@ the pre placeholder will be placed immediately.
 
 ```dart
 SakaImage.urlWithPlaceHolder(
-  "http://img.rangaofei.cn/01b18.jp",
+  "http://img.rangaofei.cn/01b18.jpg",
   errPlaceHolder: "images/error.jpeg",
   prePlaceHolder: "images/splash.jpg",
   fit: BoxFit.cover,
 );
-
 ```
 <image src="./file_pic/no_pretime.gif" width=270 height=480>
 
@@ -41,6 +40,28 @@ SakaImage.urlWithPlaceHolder(
 2. with duration,when the net image get completed before the duration,
 the placeholder will not be placed until the duration.
 
-![]()
+```dart
+SakaImage.urlWithPlaceHolder(
+  "http://img.rangaofei.cn/01b18.jpg",
+  errPlaceHolder: "images/error.jpeg",
+  prePlaceHolder: "images/splash.jpg",
+  preDuration: Duration(seconds: 5),
+  fit: BoxFit.cover,
+);
+```
+<image src="./file_pic/with_5s_duration.gif" width=270 height=480>
+
+3. if the url is not reachable or error,
+this will be replaced by the error.jpeg
+```dart
+SakaImage.urlWithPlaceHolder(
+  "http://img.rangaofei.cn/01b18.jp",//errorr
+  errPlaceHolder: "images/error.jpeg",
+  prePlaceHolder: "images/splash.jpg",
+  preDuration: Duration(seconds: 5),
+  fit: BoxFit.cover,
+);
+```
+<image src="./file_pic/with_error.gif" width=270 height=480>
 
 > the placeholder must be an assets url
