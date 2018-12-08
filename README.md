@@ -35,7 +35,7 @@ SakaImage.urlWithPlaceHolder(
 );
 
 ```
-<image src="./file_pic/no_pretime.gif" width=540 height=960>
+<image src="./file_pic/no_pretime.gif" width=270 height=480>
 
 
 2. with duration,when the net image get completed before the duration,
