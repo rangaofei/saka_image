@@ -35,7 +35,8 @@ SakaImage.urlWithPlaceHolder(
 );
 
 ```
-![](./file_pic/no_pretime.gif)
+<image src="./file_pic/no_pretime.gif" width=540 height=960>
+
 
 2. with duration,when the net image get completed before the duration,
 the placeholder will not be placed until the duration.
