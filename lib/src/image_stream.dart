@@ -169,7 +169,10 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
       @required double scale,
       double timeScale = 1.0,
       Future<ComposeImageInfo> prePlaceHolderCodec,
-      InformationCollector informationCollector})
+      Future<dynamic> inFuture,
+      InformationCollector informationCollector,
+      this.inDuration,
+      this.outDuration})
       : assert(codec != null),
         assert(timeScale != null),
         _informationCollector = informationCollector,
@@ -178,7 +181,7 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
         _framesEmitted = 0,
         super() {
     codec.then<void>(_handleCodecReady, onError: _handleError);
-
+    inFuture?.then(_handleStartInDuration, onError: _handleError);
     prePlaceHolderCodec?.then(_handlePreCodecReady, onError: _handleError);
   }
 
@@ -194,6 +197,8 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
 
   // How many frames have been emitted so far.
   int _framesEmitted;
+  final Duration inDuration;
+  final Duration outDuration;
 
   void _handleError(dynamic error, StackTrace stack) {
     reportError(
@@ -227,6 +232,10 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
     SakaLog.log("repetionCount:${_codec.repetitionCount}");
     onImageChanged(info.type);
     _decodeNextFrameAndSchedule();
+  }
+
+  void _handleStartInDuration(dynamic a) {
+    onImageChanged(ImageType.in_duration);
   }
 
   void _handleAppFrame(Duration timestamp) {
@@ -321,7 +330,7 @@ class SakaAssetImageStreamCompleter extends SakaImageStreamCompleter {
         assert(timeScale != 0),
         _informationCollector = informationCollector,
         _scale = scale ?? 1.0,
-        _timeScale = timeScale??1.0,
+        _timeScale = timeScale ?? 1.0,
         _framesEmitted = 0,
         super() {
     codec.then<void>(_handleCodecReady, onError: _handleError);

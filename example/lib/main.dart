@@ -52,17 +52,28 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            SakaImage.urlWithPlaceHolder(
-              "http://mg.rangaofei.cn/01b18.jpg",
-              errPlaceHolder: "images/06b08.jpg",
-            ),
-          ],
+        child: SakaAnimateImage(
+//          "http://img.rangaofei.cn/01b18.jpg",
+//          prePlaceHolder: "images/timg.jpeg",
+//          preDuration: Duration(seconds: 10),
+//          errPlaceHolder: "images/06b08.jpg",
+          image: SakaNetworkImage(
+            "http://img.rangaofei.cn/01b18.jpg",
+            prePlaceHolderPath: "images/timg.jpeg",
+            duration: Duration(seconds: 2),
+            outDuration: Duration(seconds: 3),
+            inDuration: Duration(seconds: 3),
+          ),
+
+//        child: FadeInImage(
+//          placeholder: Image.asset("images/timg.jpeg").image,
+//          image: Image.network(
+//                  "https://raw.githubusercontent.com/rangaofei/saka_image/master/file_pic/no_pretime.gif")
+//              .image,
+//          fadeInDuration: Duration(seconds: 2),
+//          fadeOutDuration: Duration(seconds: 3),
         ),
       ),
     );
   }
 }
-

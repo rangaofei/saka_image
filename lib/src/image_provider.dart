@@ -110,14 +110,19 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
   final double scale;
   final Map<String, String> headers;
   Duration duration;
+  Duration outDuration;
+  Duration inDuration;
 
-  SakaNetworkImage(this.url,
-      {this.prePlaceHolderPath,
-      this.errPlaceHolderPath,
-      this.duration,
-      this.scale = 1.0,
-      this.headers})
-      : assert(url != null),
+  SakaNetworkImage(
+    this.url, {
+    this.prePlaceHolderPath,
+    this.errPlaceHolderPath,
+    this.duration,
+    this.scale = 1.0,
+    this.headers,
+    this.outDuration = Duration.zero,
+    this.inDuration = Duration.zero,
+  })  : assert(url != null),
         assert(scale != null);
 
   @override
@@ -126,6 +131,9 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
         prePlaceHolderCodec: _loadPreAsync(key),
         codec: _loadAsync(key),
         scale: key.scale,
+        inDuration: inDuration,
+        outDuration: outDuration,
+        inFuture: _loadInFuture(),
         informationCollector: (StringBuffer information) {
           information.writeln('Image provider: $this');
           information.write('Image key: $key');
@@ -180,6 +188,13 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
         ImageType.pre_placeholder);
   }
 
+  Future<dynamic> _loadInFuture() {
+    return Future.delayed(
+      duration ?? Duration(seconds: 0),
+      null,
+    );
+  }
+
   Future<ui.Codec> _getErrorImage() async {
     if (errPlaceHolderPath == null) {
       return _getDelayResult(Uint8List.fromList(Constant.emptyPng));
@@ -195,8 +210,11 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
   }
 
   Future<ui.Codec> _getDelayResult(Uint8List data) {
-    return Future.delayed(duration ?? Duration(seconds: 0),
-        () => PaintingBinding.instance.instantiateImageCodec(data));
+    print("outduration=${outDuration.toString()}");
+    return Future.delayed(
+      (duration ?? Duration(seconds: 0)) + outDuration,
+      () => PaintingBinding.instance.instantiateImageCodec(data),
+    );
   }
 
   @override
