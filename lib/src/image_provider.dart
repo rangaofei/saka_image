@@ -55,7 +55,7 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
   final String imagePath;
   final double timeScale;
 
-  SakaAssetImage(this.imagePath, {scale, this.timeScale })
+  SakaAssetImage(this.imagePath, {scale, this.timeScale})
       : assert(imagePath != null),
         assert(scale != 0),
         assert(timeScale != 0),
@@ -138,27 +138,34 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
     assert(key == this);
     var startTime = DateTime.now();
     final Uri resolved = Uri.base.resolve(key.url);
-    final HttpClientRequest request = await _httpClient.getUrl(resolved);
-    headers?.forEach((String name, String value) {
-      request.headers.add(name, value);
-    });
-    final HttpClientResponse response = await request.close();
-    var stopTime = DateTime.now();
-    SakaLog.log(
-        "loading used time :${stopTime.difference(startTime).toString()}");
-    if (response.statusCode != HttpStatus.ok) {
-      SakaLog.log("http url error");
+    try {
+      final HttpClientRequest request = await _httpClient.getUrl(resolved);
+      headers?.forEach((String name, String value) {
+        request.headers.add(name, value);
+      });
+      final HttpClientResponse response = await request.close();
+      var stopTime = DateTime.now();
+      SakaLog.log(
+          "loading used time :${stopTime.difference(startTime).toString()}");
+      if (response.statusCode != HttpStatus.ok) {
+        SakaLog.log("http url error");
+        return ComposeImageInfo(
+            await _getErrorImage(), ImageType.err_placeholder);
+      }
+      final Uint8List bytes =
+          await consolidateHttpClientResponseBytes(response);
+      if (bytes.lengthInBytes == 0) {
+        SakaLog.log("url get bytes is not correct");
+        return ComposeImageInfo(
+            await _getErrorImage(), ImageType.err_placeholder);
+      }
+      return ComposeImageInfo(
+          await _getDelayResult(bytes), ImageType.correct_image);
+    } catch (e) {
+      SakaLog.log(e.toString());
       return ComposeImageInfo(
           await _getErrorImage(), ImageType.err_placeholder);
     }
-    final Uint8List bytes = await consolidateHttpClientResponseBytes(response);
-    if (bytes.lengthInBytes == 0) {
-      SakaLog.log("url get bytes is not correct");
-      return ComposeImageInfo(
-          await _getErrorImage(), ImageType.err_placeholder);
-    }
-    return ComposeImageInfo(
-        await _getDelayResult(bytes), ImageType.correct_image);
   }
 
   Future<ComposeImageInfo> _loadPreAsync(SakaNetworkImage key) async {
