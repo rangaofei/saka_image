@@ -34,7 +34,7 @@ SakaImage.urlWithPlaceHolder(
   fit: BoxFit.cover,
 );
 ```
-<image src="https://github.com/rangaofei/saka_image/tree/master/file_pic/no_pretime.gif" width=270 height=480>
+<image src="https://raw.githubusercontent.com/rangaofei/saka_image/master/file_pic/no_pretime.gif" width=270 height=480>
 
 
 2. with duration,when the net image get completed before the duration,
@@ -49,7 +49,7 @@ SakaImage.urlWithPlaceHolder(
   fit: BoxFit.cover,
 );
 ```
-<image src="https://github.com/rangaofei/saka_image/tree/master/file_pic/with_5s_duration.gif" width=270 height=480>
+<image src="https://raw.githubusercontent.com/rangaofei/saka_image/master/file_pic/with_5s_duration.gif" width=270 height=480>
 
 3. if the url is not reachable or error,
 this will be replaced by the error.jpeg
@@ -62,6 +62,6 @@ SakaImage.urlWithPlaceHolder(
   fit: BoxFit.cover,
 );
 ```
-<image src="https://github.com/rangaofei/saka_image/tree/master/file_pic/with_error.gif" width=270 height=480>
+<image src="https://raw.githubusercontent.com/rangaofei/saka_image/master/file_pic/with_error.gif" width=270 height=480>
 
 > the placeholder must be an assets url

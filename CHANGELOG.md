@@ -1,4 +1,4 @@
-## [0.0.3] - 2018.12.10
+## [0.0.4] - 2018.12.10
 
 fix the url is not correct but not show the errPlaceHolder bug
 
