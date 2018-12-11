@@ -1,6 +1,7 @@
 enum ImageType {
-  pre_placeholder,
-  in_duration,
-  correct_image,
-  err_placeholder,
+  PRE_PLACE_HOLDER,
+  OUT_DURATION,
+  IN_DURATION,
+  CORRECT_IMAGE,
+  ERR_PLACE_HOLDER,
 }

@@ -158,21 +158,21 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
       if (response.statusCode != HttpStatus.ok) {
         SakaLog.log("http url error");
         return ComposeImageInfo(
-            await _getErrorImage(), ImageType.err_placeholder);
+            await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
       }
       final Uint8List bytes =
           await consolidateHttpClientResponseBytes(response);
       if (bytes.lengthInBytes == 0) {
         SakaLog.log("url get bytes is not correct");
         return ComposeImageInfo(
-            await _getErrorImage(), ImageType.err_placeholder);
+            await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
       }
       return ComposeImageInfo(
-          await _getDelayResult(bytes), ImageType.correct_image);
+          await _getDelayResult(bytes), ImageType.CORRECT_IMAGE);
     } catch (e) {
       SakaLog.log(e.toString());
       return ComposeImageInfo(
-          await _getErrorImage(), ImageType.err_placeholder);
+          await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
     }
   }
 
@@ -185,7 +185,7 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
     var imgList = byteData.buffer.asUint8List();
     return ComposeImageInfo(
         await PaintingBinding.instance.instantiateImageCodec(imgList),
-        ImageType.pre_placeholder);
+        ImageType.PRE_PLACE_HOLDER);
   }
 
   Future<dynamic> _loadInFuture() {

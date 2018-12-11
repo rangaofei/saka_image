@@ -45,35 +45,31 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  ImageInfo info;
+
   @override
   Widget build(BuildContext context) {
+    Image.asset("images/yuan.png")
+        .image
+        .resolve(createLocalImageConfiguration(context))
+        .addListener((ImageInfo image, bool synchronousCall) {
+      setState(() {
+        info = image;
+      });
+    });
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: SakaAnimateImage(
-//          "http://img.rangaofei.cn/01b18.jpg",
-//          prePlaceHolder: "images/timg.jpeg",
-//          preDuration: Duration(seconds: 10),
-//          errPlaceHolder: "images/06b08.jpg",
-          image: SakaNetworkImage(
-            "http://img.rangaofei.cn/01b18.jpg",
-            prePlaceHolderPath: "images/timg.jpeg",
-            duration: Duration(seconds: 2),
-            outDuration: Duration(seconds: 3),
-            inDuration: Duration(seconds: 3),
-          ),
-
-//        child: FadeInImage(
-//          placeholder: Image.asset("images/timg.jpeg").image,
-//          image: Image.network(
-//                  "https://raw.githubusercontent.com/rangaofei/saka_image/master/file_pic/no_pretime.gif")
-//              .image,
-//          fadeInDuration: Duration(seconds: 2),
-//          fadeOutDuration: Duration(seconds: 3),
+        appBar: AppBar(
+          title: Text(widget.title),
         ),
-      ),
-    );
+        body: Center(
+          child: RawImage(
+            image: info?.image,
+            width: 200.0,
+            height: 200.0,
+            color: Colors.red,
+            colorBlendMode: BlendMode.src,
+            fit: BoxFit.cover,
+          ),
+        ));
   }
 }

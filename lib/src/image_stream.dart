@@ -235,7 +235,7 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
   }
 
   void _handleStartInDuration(dynamic a) {
-    onImageChanged(ImageType.in_duration);
+    onImageChanged(ImageType.IN_DURATION);
   }
 
   void _handleAppFrame(Duration timestamp) {

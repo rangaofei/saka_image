@@ -91,6 +91,7 @@ class _SakaAnimateState extends State<SakaAnimateImage>
       });
     });
     _controller.addStatusListener((AnimationStatus status) {
+      SakaLog.log("AnimationStatus$status");
       _updatePhase();
     });
     super.initState();
@@ -162,22 +163,25 @@ class _SakaAnimateState extends State<SakaAnimateImage>
     }
     setState(() {
       _imageInfo = imageInfo;
+      _phase = ImagePhase.fadeOut;
     });
   }
 
   void handleImageTypeChanged(ImageType type) {
     SakaLog.log("this type is $type");
     switch (type) {
-      case ImageType.pre_placeholder:
+      case ImageType.PRE_PLACE_HOLDER:
         break;
-      case ImageType.in_duration:
+      case ImageType.IN_DURATION:
         _phase = ImagePhase.waiting;
         break;
-      case ImageType.correct_image:
-        _phase = ImagePhase.fadeOut;
+      case ImageType.CORRECT_IMAGE:
+//        _phase = ImagePhase.fadeOut;
         break;
-      case ImageType.err_placeholder:
-        _phase = ImagePhase.fadeOut;
+      case ImageType.ERR_PLACE_HOLDER:
+//        _phase = ImagePhase.fadeOut;
+        break;
+      case ImageType.OUT_DURATION:
         break;
     }
     _updatePhase();
@@ -187,12 +191,14 @@ class _SakaAnimateState extends State<SakaAnimateImage>
     setState(() {
       switch (_phase) {
         case ImagePhase.start:
+          SakaLog.log("_phase start");
           if (_imageInfo != null)
             _phase = ImagePhase.completed;
           else
             _phase = ImagePhase.waiting;
           break;
         case ImagePhase.waiting:
+          SakaLog.log("_phase waiting");
           if (_imageInfo != null) {
             // Received image data. Begin placeholder fade-out.
             _controller.duration = widget.outDuration;
@@ -200,11 +206,13 @@ class _SakaAnimateState extends State<SakaAnimateImage>
               parent: _controller,
               curve: widget.outCurve,
             );
-
+            SakaLog.log("reverse");
+            _phase = ImagePhase.fadeOut;
             _controller.reverse(from: 1.0);
           }
           break;
         case ImagePhase.fadeOut:
+          SakaLog.log("_phase fadeout");
           if (_controller.status == AnimationStatus.dismissed) {
             // Done fading out placeholder. Begin target image fade-in.
             _controller.duration = widget.inDuration;
@@ -212,11 +220,13 @@ class _SakaAnimateState extends State<SakaAnimateImage>
               parent: _controller,
               curve: widget.inCurve,
             );
+            SakaLog.log("forward");
             _phase = ImagePhase.fadeIn;
             _controller.forward(from: 0.0);
           }
           break;
         case ImagePhase.fadeIn:
+          SakaLog.log("_phase fadein");
           if (_controller.status == AnimationStatus.completed) {
             // Done finding in new image.
             _phase = ImagePhase.completed;

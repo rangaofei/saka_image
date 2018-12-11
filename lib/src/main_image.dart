@@ -41,6 +41,8 @@ class SakaImage extends StatefulWidget {
     errPlaceHolder,
     prePlaceHolder,
     preDuration,
+    outAnimation,
+    inAnimation,
   }) : _image = SakaNetworkImage(url,
             prePlaceHolderPath: prePlaceHolder,
             errPlaceHolderPath: errPlaceHolder,
@@ -62,7 +64,7 @@ class SakaImage extends StatefulWidget {
     this.gaplessPlayback = false,
     this.filterQuality = FilterQuality.low,
     timeScale,
-  }) : _image = SakaAssetImage(url, timeScale: timeScale??1.0);
+  }) : _image = SakaAssetImage(url, timeScale: timeScale ?? 1.0);
 
   const SakaImage(
     this._image, {
