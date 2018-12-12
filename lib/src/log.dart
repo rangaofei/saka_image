@@ -1,14 +1,13 @@
-class SakaLog {
-  static String tag;
+import 'package:flutter/foundation.dart';
 
-  static void init(String s) {
+class SakaLog {
+  static String tag = 'saka_image';
+
+  static void init({String s, int level}) {
     tag = s;
   }
 
   static void log(String message) {
-    if (tag == null) {
-      tag = "saka_image";
-    }
-    print("$tag: ${DateTime.now().toString()}: $message");
+    debugPrint("${DateTime.now().toString()}: $tag: $message");
   }
 }
