@@ -3,6 +3,7 @@ import 'package:saka_image/saka_image.dart';
 import 'package:saka_image/src/image_stream.dart';
 import 'package:saka_image/src/image_type.dart';
 import 'package:saka_image/src/log.dart';
+import 'package:saka_image/src/raw_image.dart';
 
 class SakaAnimateImage extends StatefulWidget {
   final SakaImageProvider image;
@@ -244,17 +245,18 @@ class _SakaAnimateState extends State<SakaAnimateImage>
   @override
   Widget build(BuildContext context) {
     final ImageInfo imageInfo = _imageInfo;
-    return RawImage(
+    return SakaRawImage(
       image: imageInfo?.image,
       width: widget.width,
       height: widget.height,
       scale: imageInfo?.scale ?? 1.0,
-      color: Color.fromRGBO(255, 255, 255, _animation?.value ?? 1.0),
       colorBlendMode: BlendMode.modulate,
       fit: widget.fit,
       alignment: widget.alignment,
       repeat: widget.repeat,
       matchTextDirection: widget.matchTextDirection,
+      value: _controller?.value,
+      animateType: AnimateType.scale,
     );
   }
 
