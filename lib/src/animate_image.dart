@@ -168,7 +168,6 @@ class _SakaAnimateState extends State<SakaAnimateImage>
   }
 
   void handleImageTypeChanged(ImageType type) {
-    SakaLog.log("this type is $type");
     switch (type) {
       case ImageType.PRE_PLACE_HOLDER:
         break;

@@ -38,15 +38,15 @@ class SakaImage extends StatefulWidget {
     this.matchTextDirection = false,
     this.gaplessPlayback = false,
     this.filterQuality = FilterQuality.low,
-    errPlaceHolder,
-    prePlaceHolder,
-    preDuration,
-    outAnimation,
-    inAnimation,
-  }) : _image = SakaNetworkImage(url,
-            prePlaceHolderPath: prePlaceHolder,
-            errPlaceHolderPath: errPlaceHolder,
-            duration: preDuration);
+    String errPlaceHolder,
+    String prePlaceHolder,
+    Duration preDuration,
+  }) : _image = SakaNetworkImage(
+          url,
+          prePlaceHolderPath: prePlaceHolder,
+          errPlaceHolderPath: errPlaceHolder,
+          duration: preDuration,
+        );
 
   SakaImage.assetImage(
     String url, {

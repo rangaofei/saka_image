@@ -63,7 +63,7 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
 
   @override
   ImageStreamCompleter load(SakaImageProvider key) {
-    return SakaAssetImageStreamCompleter(
+    return SakaImageStreamCompleter(
         codec: _loadAsync(key),
         timeScale: timeScale,
         scale: key.scale,
@@ -73,11 +73,13 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
         });
   }
 
-  Future<ui.Codec> _loadAsync(SakaAssetImage key) async {
+  Future<ComposeImageInfo> _loadAsync(SakaAssetImage key) async {
     assert(key == this);
     var byteData = await rootBundle.load(imagePath);
     var imgList = byteData.buffer.asUint8List();
-    return PaintingBinding.instance.instantiateImageCodec(imgList);
+    return ComposeImageInfo(
+        await PaintingBinding.instance.instantiateImageCodec(imgList),
+        ImageType.CORRECT_IMAGE);
   }
 
   @override
@@ -112,6 +114,7 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
   Duration duration;
   Duration outDuration;
   Duration inDuration;
+  DateTime preLoadDuration;
 
   SakaNetworkImage(
     this.url, {
@@ -127,13 +130,12 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
 
   @override
   ImageStreamCompleter load(SakaImageProvider key) {
-    return SakaComposeFrameImageStreamCompleter(
+    return SakaComposeImageStreamCompleter(
         prePlaceHolderCodec: _loadPreAsync(key),
         codec: _loadAsync(key),
         scale: key.scale,
         inDuration: inDuration,
         outDuration: outDuration,
-        inFuture: _loadInFuture(),
         informationCollector: (StringBuffer information) {
           information.writeln('Image provider: $this');
           information.write('Image key: $key');
@@ -152,27 +154,27 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
         request.headers.add(name, value);
       });
       final HttpClientResponse response = await request.close();
-      var stopTime = DateTime.now();
-      SakaLog.log(
-          "loading used time :${stopTime.difference(startTime).toString()}");
       if (response.statusCode != HttpStatus.ok) {
         SakaLog.log("http url error");
         return ComposeImageInfo(
-            await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
+            await _getErrorImage(startTime), ImageType.ERR_PLACE_HOLDER);
       }
       final Uint8List bytes =
           await consolidateHttpClientResponseBytes(response);
       if (bytes.lengthInBytes == 0) {
         SakaLog.log("url get bytes is not correct");
         return ComposeImageInfo(
-            await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
+            await _getErrorImage(
+              startTime,
+            ),
+            ImageType.ERR_PLACE_HOLDER);
       }
       return ComposeImageInfo(
-          await _getDelayResult(bytes), ImageType.CORRECT_IMAGE);
+          await _getDelayResult(startTime, bytes), ImageType.CORRECT_IMAGE);
     } catch (e) {
       SakaLog.log(e.toString());
       return ComposeImageInfo(
-          await _getErrorImage(), ImageType.ERR_PLACE_HOLDER);
+          await _getErrorImage(startTime), ImageType.ERR_PLACE_HOLDER);
     }
   }
 
@@ -181,39 +183,40 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
     if (prePlaceHolderPath == null) {
       return null;
     }
+
     var byteData = await rootBundle.load(prePlaceHolderPath);
     var imgList = byteData.buffer.asUint8List();
-    return ComposeImageInfo(
-        await PaintingBinding.instance.instantiateImageCodec(imgList),
-        ImageType.PRE_PLACE_HOLDER);
+    ui.Codec result =
+        await PaintingBinding.instance.instantiateImageCodec(imgList);
+    preLoadDuration = DateTime.now();
+    return ComposeImageInfo(result, ImageType.PRE_PLACE_HOLDER);
   }
 
-  Future<dynamic> _loadInFuture() {
-    return Future.delayed(
-      duration ?? Duration(seconds: 0),
-      null,
-    );
-  }
-
-  Future<ui.Codec> _getErrorImage() async {
+  Future<ui.Codec> _getErrorImage(DateTime startTime) async {
     if (errPlaceHolderPath == null) {
-      return _getDelayResult(Uint8List.fromList(Constant.emptyPng));
+      return _getDelayResult(startTime, Uint8List.fromList(Constant.emptyPng));
     }
     try {
       var byteData = await rootBundle.load(errPlaceHolderPath);
       var imgList = byteData.buffer.asUint8List();
-      return _getDelayResult(imgList);
+      return _getDelayResult(startTime, imgList);
     } catch (e) {
       SakaLog.log("$errPlaceHolderPath::${e.toString()}");
-      return _getDelayResult(Uint8List.fromList(Constant.emptyPng));
+      return _getDelayResult(startTime, Uint8List.fromList(Constant.emptyPng));
     }
   }
 
-  Future<ui.Codec> _getDelayResult(Uint8List data) {
-    print("outduration=${outDuration.toString()}");
+  Future<ui.Codec> _getDelayResult(DateTime startTime, Uint8List data) async {
+    ui.Codec result =
+        await PaintingBinding.instance.instantiateImageCodec(data);
+    var stopTime = DateTime.now();
+    SakaLog.log(
+        "loading used time :${stopTime.difference(startTime).toString()}");
+    duration = duration - stopTime.difference(preLoadDuration);
+    SakaLog.log("duration=${duration.toString()}");
     return Future.delayed(
-      (duration ?? Duration(seconds: 0)) + outDuration,
-      () => PaintingBinding.instance.instantiateImageCodec(data),
+      (duration ?? Duration(seconds: 0)),
+      () => result,
     );
   }
 

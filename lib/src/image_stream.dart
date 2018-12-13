@@ -27,12 +27,12 @@ class _ImageListenerPair {
 class SakaImageStream extends Diagnosticable {
   SakaImageStream();
 
-  SakaImageStreamCompleter get completer => _completer;
-  SakaImageStreamCompleter _completer;
+  SakaBaseStreamCompleter get completer => _completer;
+  SakaBaseStreamCompleter _completer;
 
   List<_ImageListenerPair> _listeners;
 
-  void setCompleter(SakaImageStreamCompleter value) {
+  void setCompleter(SakaBaseStreamCompleter value) {
     assert(_completer == null);
     _completer = value;
     if (_listeners != null) {
@@ -123,14 +123,15 @@ class SakaImageStream extends Diagnosticable {
   }
 }
 
-abstract class SakaImageStreamCompleter extends ImageStreamCompleter {
+abstract class SakaBaseStreamCompleter extends ImageStreamCompleter {
   final List<_ImageListenerPair> _listeners = <_ImageListenerPair>[];
+  final InformationCollector _informationCollector;
 
   bool get _hasActiveListeners => _listeners.isNotEmpty;
   ui.Codec _codec;
   Timer timer;
 
-  SakaImageStreamCompleter() : timer = null;
+  SakaBaseStreamCompleter(this._informationCollector) : timer = null;
 
   @override
   void addListener(ImageListener listener,
@@ -157,36 +158,27 @@ abstract class SakaImageStreamCompleter extends ImageStreamCompleter {
     }
   }
 
-  @protected
-  _decodeNextFrameAndSchedule();
-}
-
-class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
-  final double _timeScale;
-
-  SakaComposeFrameImageStreamCompleter(
-      {@required Future<ComposeImageInfo> codec,
-      @required double scale,
-      double timeScale = 1.0,
-      Future<ComposeImageInfo> prePlaceHolderCodec,
-      Future<dynamic> inFuture,
-      InformationCollector informationCollector,
-      this.inDuration,
-      this.outDuration})
-      : assert(codec != null),
-        assert(timeScale != null),
-        _informationCollector = informationCollector,
-        _scale = scale,
-        _timeScale = timeScale,
-        _framesEmitted = 0,
-        super() {
-    codec.then<void>(_handleCodecReady, onError: _handleError);
-    inFuture?.then(_handleStartInDuration, onError: _handleError);
-    prePlaceHolderCodec?.then(_handlePreCodecReady, onError: _handleError);
+  void _handleError(String context, dynamic error, StackTrace stack) {
+    reportError(
+      context: context,
+      exception: error,
+      stack: stack,
+      informationCollector: _informationCollector,
+      silent: true,
+    );
   }
 
+  @protected
+  _handleCodecReady(ComposeImageInfo info);
+
+  @protected
+  Future<void> _decodeNextFrameAndSchedule();
+}
+
+class SakaImageStreamCompleter extends SakaBaseStreamCompleter {
+  final double _timeScale;
   final double _scale;
-  final InformationCollector _informationCollector;
+
   ui.FrameInfo _nextFrame;
 
   // When the current was first shown.
@@ -197,92 +189,29 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
 
   // How many frames have been emitted so far.
   int _framesEmitted;
-  final Duration inDuration;
-  final Duration outDuration;
 
-  void _handleError(dynamic error, StackTrace stack) {
-    reportError(
-      context: 'resolving an image codec',
-      exception: error,
-      stack: stack,
-      informationCollector: _informationCollector,
-      silent: true,
-    );
+  SakaImageStreamCompleter({
+    @required Future<ComposeImageInfo> codec,
+    @required double scale,
+    double timeScale,
+    InformationCollector informationCollector,
+  })  : assert(timeScale != 0),
+        _framesEmitted = 0,
+        _timeScale = timeScale ?? 1.0,
+        _scale = scale ?? 1.0,
+        super(informationCollector) {
+    codec.then<void>(_handleCodecReady, onError: _handleError);
   }
 
-  //deal with the prePlaceHolder
-  void _handlePreCodecReady(ComposeImageInfo info) {
-    if (info == null || info.codec == null) {
-      return;
-    }
-    _codec = info.codec;
-    SakaLog.log("prePlaceHolder repetionCount:${_codec.repetitionCount}");
-    onImageChanged(info.type);
-    _decodeNextFrameAndSchedule();
-  }
-
-  //deal with the image from url
-  void _handleCodecReady(ComposeImageInfo info) {
-    if (info == null || info.codec == null) {
-      return;
-    }
-    _codec = info.codec;
-    _framesEmitted = 0;
-    _frameDuration = null;
-    SakaLog.log("repetionCount:${_codec.repetitionCount}");
-    onImageChanged(info.type);
-    _decodeNextFrameAndSchedule();
-  }
-
-  void _handleStartInDuration(dynamic a) {
-    onImageChanged(ImageType.IN_DURATION);
-  }
-
-  void _handleAppFrame(Duration timestamp) {
-    if (!_hasActiveListeners) return;
-    if (_isFirstFrame() || _hasFrameDurationPassed(timestamp)) {
-      _emitFrame(ImageInfo(image: _nextFrame.image, scale: _scale));
-      _shownTimestamp = timestamp;
-      _frameDuration = _nextFrame.duration;
-      _nextFrame = null;
-      final int completedCycles = _framesEmitted ~/ _codec.frameCount;
-      if (_codec.repetitionCount == -1 ||
-          completedCycles <= _codec.repetitionCount) {
-        _decodeNextFrameAndSchedule();
-      }
-      return;
-    }
-    final Duration delay = _frameDuration - (timestamp - _shownTimestamp);
-    timer = Timer(delay * timeDilation, () {
-      SchedulerBinding.instance.scheduleFrameCallback(_handleAppFrame);
-    });
-  }
-
-  bool _isFirstFrame() {
-    return _frameDuration == null;
-  }
-
-  bool _hasFrameDurationPassed(Duration timestamp) {
-    assert(_shownTimestamp != null);
-    return timestamp - _shownTimestamp >= _frameDuration;
-  }
-
+  @override
   Future<void> _decodeNextFrameAndSchedule() async {
     try {
       _nextFrame = await _codec.getNextFrame();
     } catch (exception, stack) {
-      reportError(
-        context: 'resolving an image frame',
-        exception: exception,
-        stack: stack,
-        informationCollector: _informationCollector,
-        silent: true,
-      );
+      _handleError('resolving an image frame', exception, stack);
       return;
     }
     if (_codec.frameCount == 1) {
-      // This is not an animated image, just return it and don't schedule more
-      // frames.
       _emitFrame(ImageInfo(image: _nextFrame.image, scale: _scale));
       return;
     }
@@ -292,83 +221,6 @@ class SakaComposeFrameImageStreamCompleter extends SakaImageStreamCompleter {
   void _emitFrame(ImageInfo imageInfo) {
     setImage(imageInfo);
     _framesEmitted += 1;
-  }
-
-  void onImageChanged(ImageType type) {
-    final List<ImageChangeListener> localListeners = _listeners
-        .map((_ImageListenerPair listenerPair) => listenerPair.changeListener)
-        .toList();
-    if (localListeners.isEmpty) {
-      return;
-    }
-    for (ImageChangeListener listener in localListeners) {
-      if (listener == null) {
-        continue;
-      }
-      try {
-        listener(type);
-      } catch (exception, stack) {
-        reportError(
-          context: 'by an image listener',
-          exception: exception,
-          stack: stack,
-        );
-      }
-    }
-  }
-}
-
-class SakaAssetImageStreamCompleter extends SakaImageStreamCompleter {
-  final double _timeScale;
-
-  SakaAssetImageStreamCompleter(
-      {@required Future<ui.Codec> codec,
-      @required double scale,
-      double timeScale = 1.0,
-      InformationCollector informationCollector})
-      : assert(codec != null),
-        assert(timeScale != 0),
-        _informationCollector = informationCollector,
-        _scale = scale ?? 1.0,
-        _timeScale = timeScale ?? 1.0,
-        _framesEmitted = 0,
-        super() {
-    codec.then<void>(_handleCodecReady, onError: _handleError);
-  }
-
-  final double _scale;
-  final InformationCollector _informationCollector;
-  ui.FrameInfo _nextFrame;
-
-  // When the current was first shown.
-  Duration _shownTimestamp;
-
-  // The requested duration for the current frame;
-  Duration _frameDuration;
-
-  // How many frames have been emitted so far.
-  int _framesEmitted;
-
-  void _handleError(dynamic error, StackTrace stack) {
-    reportError(
-      context: 'resolving an image codec',
-      exception: error,
-      stack: stack,
-      informationCollector: _informationCollector,
-      silent: true,
-    );
-  }
-
-  //deal with the image from url
-  void _handleCodecReady(ui.Codec codec) {
-    if (codec == null) {
-      return;
-    }
-    _codec = codec;
-    _framesEmitted = 0;
-    _frameDuration = null;
-    SakaLog.log("repetionCount:${_codec.repetitionCount}");
-    _decodeNextFrameAndSchedule();
   }
 
   void _handleAppFrame(Duration timestamp) {
@@ -400,6 +252,132 @@ class SakaAssetImageStreamCompleter extends SakaImageStreamCompleter {
     return timestamp - _shownTimestamp >= _frameDuration;
   }
 
+  @override
+  _handleCodecReady(ComposeImageInfo info) {
+    if (info == null || info.codec == null) {
+      return;
+    }
+    _codec = info.codec;
+    _framesEmitted = 0;
+    _frameDuration = null;
+    onImageChanged(info.type);
+    _decodeNextFrameAndSchedule();
+  }
+
+  void onImageChanged(ImageType type) {
+    final List<ImageChangeListener> localListeners = _listeners
+        .map((_ImageListenerPair listenerPair) => listenerPair.changeListener)
+        .toList();
+    if (localListeners.isEmpty) {
+      return;
+    }
+    for (ImageChangeListener listener in localListeners) {
+      if (listener == null) {
+        continue;
+      }
+      try {
+        listener(type);
+      } catch (exception, stack) {
+        _handleError('ImageChangeListener', exception, stack);
+      }
+    }
+  }
+}
+
+class SakaComposeImageStreamCompleter extends SakaImageStreamCompleter {
+  SakaComposeImageStreamCompleter({
+    @required Future<ComposeImageInfo> codec,
+    @required double scale,
+    double timeScale = 1.0,
+    Future<ComposeImageInfo> prePlaceHolderCodec,
+    InformationCollector informationCollector,
+    this.inDuration,
+    this.outDuration,
+    this.waitInAnimation = true,
+  })  : assert(codec != null),
+        assert(timeScale != null),
+        super(
+            codec: codec,
+            scale: scale,
+            informationCollector: informationCollector,
+            timeScale: timeScale) {
+    prePlaceHolderCodec?.then(_handlePreCodecReady, onError: _handleError);
+  }
+
+  final Duration inDuration;
+  final Duration outDuration;
+  final bool waitInAnimation;
+
+  //deal with the prePlaceHolder
+  void _handlePreCodecReady(ComposeImageInfo info) {
+    if (info == null || info.codec == null) {
+      return;
+    }
+    _codec = info.codec;
+    onImageChanged(info.type);
+    _decodeNextFrameAndSchedule();
+  }
+
+  @override
+  void _handleCodecReady(ComposeImageInfo info) {
+    if (info == null || info.codec == null) {
+      return;
+    }
+    onImageChanged(ImageType.OUT_DURATION);
+    Future.delayed(outDuration, () {
+      _handleOutDuration(info);
+    });
+  }
+
+  void _handleOutDuration(ComposeImageInfo info) {
+    _codec = info.codec;
+    _framesEmitted = 0;
+    _frameDuration = null;
+    onImageChanged(info.type);
+    _decodeNextFrameAndSchedule();
+  }
+
+  void _handleInDuration() {
+    Future.delayed(outDuration, () => _decodeNextFrameAndSchedule());
+  }
+
+  void _handleAppFrame(Duration timestamp) {
+    if (!_hasActiveListeners) return;
+    if (_isFirstFrame()) {
+      _emitFrame(ImageInfo(image: _nextFrame.image, scale: _scale));
+      _shownTimestamp = timestamp;
+      _frameDuration = _nextFrame.duration * _timeScale;
+      _nextFrame = null;
+      final int completedCycles = _framesEmitted ~/ _codec.frameCount;
+      if (_codec.repetitionCount == -1 ||
+          completedCycles <= _codec.repetitionCount) {
+        if (this.waitInAnimation) {
+          onImageChanged(ImageType.IN_DURATION);
+          _handleInDuration();
+        } else {
+          _decodeNextFrameAndSchedule();
+        }
+      }
+      return;
+    }
+    if (_hasFrameDurationPassed(timestamp)) {
+      _emitFrame(ImageInfo(image: _nextFrame.image, scale: _scale));
+      _shownTimestamp = timestamp;
+      _frameDuration = _nextFrame.duration * _timeScale;
+      _nextFrame = null;
+      final int completedCycles = _framesEmitted ~/ _codec.frameCount;
+      if (_codec.repetitionCount == -1 ||
+          completedCycles <= _codec.repetitionCount) {
+        _decodeNextFrameAndSchedule();
+      }
+      return;
+    }
+    final Duration delay = _frameDuration - (timestamp - _shownTimestamp);
+    timer = Timer(delay * timeDilation, () {
+      SchedulerBinding.instance.scheduleFrameCallback(_handleAppFrame);
+    });
+  }
+
   Future<void> _decodeNextFrameAndSchedule() async {
     try {
       _nextFrame = await _codec.getNextFrame();
@@ -420,10 +398,5 @@ class SakaAssetImageStreamCompleter extends SakaImageStreamCompleter {
       return;
     }
     SchedulerBinding.instance.scheduleFrameCallback(_handleAppFrame);
-  }
-
-  void _emitFrame(ImageInfo imageInfo) {
-    setImage(imageInfo);
-    _framesEmitted += 1;
   }
 }

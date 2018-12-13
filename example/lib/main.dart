@@ -165,9 +165,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget getSakaImage() {
     return SakaImage.urlWithPlaceHolder(
-      "http://img.rangaofei.cn/01b18.jpg",
+      "http://wx3.sinaimg.cn/mw690/006ZrXHXgy1fvxfdb3h2fg30bq0fx1l3.gif",
       prePlaceHolder: "images/timg.jpeg",
       errPlaceHolder: "images/06bo8.jpg",
+      preDuration: Duration(seconds: 10),
+    );
+  }
+
+  Widget getSakaAssetImage() {
+    return SakaImage.assetImage(
+      "images/bbb.gif",
+      timeScale: 2.0,
     );
   }
 }
