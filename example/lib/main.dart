@@ -90,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: getSakaImage());
+    return Scaffold(body: getSakaAnimateImage());
   }
 
   Widget getAvatar() {
@@ -176,6 +176,21 @@ class _MyHomePageState extends State<MyHomePage> {
     return SakaImage.assetImage(
       "images/bbb.gif",
       timeScale: 2.0,
+    );
+  }
+
+  Widget getSakaAnimateImage() {
+    return SakaAnimateImage(
+      inDuration: Duration(seconds: 3),
+      outDuration: Duration(seconds: 4),
+      image: SakaNetworkImage(
+        "http://wx3.sinaimgcn/mw690/006ZrXHXgy1fvxfdb3h2fg30bq0fx1l3.gif",
+        prePlaceHolderPath: "images/timg.jpeg",
+        errPlaceHolderPath: "images/06b08.jpg",
+        duration: Duration(seconds: 5),
+        inDuration: Duration(seconds: 3),
+        outDuration: Duration(seconds: 4),
+      ),
     );
   }
 }

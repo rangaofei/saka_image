@@ -47,21 +47,18 @@ class SakaAnimateImage extends StatefulWidget {
 }
 
 enum ImagePhase {
-  /// The initial state.
-  ///
-  /// We do not yet know whether the target image is ready and therefore no
-  /// animation is necessary, or whether we need to use the placeholder and
-  /// wait for the image to load.
   start,
 
   /// Waiting for the target image to load.
   waiting,
 
   /// Fading out previous image.
-  fadeOut,
+  animateOutStart,
+  animateOuting,
 
   /// Fading in new image.
-  fadeIn,
+  animateInStart,
+  animateIning,
 
   /// Fade-in complete.
   completed,
@@ -163,24 +160,26 @@ class _SakaAnimateState extends State<SakaAnimateImage>
     }
     setState(() {
       _imageInfo = imageInfo;
-      _phase = ImagePhase.fadeOut;
     });
   }
 
   void handleImageTypeChanged(ImageType type) {
+    SakaLog.log("handleImageTypeChanged.type = ${type}");
     switch (type) {
       case ImageType.PRE_PLACE_HOLDER:
-        break;
-      case ImageType.IN_DURATION:
         _phase = ImagePhase.waiting;
         break;
+      case ImageType.IN_DURATION:
+        _phase = ImagePhase.animateInStart;
+        break;
       case ImageType.CORRECT_IMAGE:
-//        _phase = ImagePhase.fadeOut;
+//        _phase = ImagePhase.animateOutStart;
         break;
       case ImageType.ERR_PLACE_HOLDER:
-//        _phase = ImagePhase.fadeOut;
+        _phase = ImagePhase.animateInStart;
         break;
       case ImageType.OUT_DURATION:
+        _phase = ImagePhase.animateOutStart;
         break;
     }
     _updatePhase();
@@ -191,13 +190,16 @@ class _SakaAnimateState extends State<SakaAnimateImage>
       switch (_phase) {
         case ImagePhase.start:
           SakaLog.log("_phase start");
-          if (_imageInfo != null)
-            _phase = ImagePhase.completed;
-          else
-            _phase = ImagePhase.waiting;
+//          if (_imageInfo != null)
+//            _phase = ImagePhase.completed;
+//          else
+//            _phase = ImagePhase.waiting;
           break;
         case ImagePhase.waiting:
           SakaLog.log("_phase waiting");
+          break;
+        case ImagePhase.animateOutStart:
+          SakaLog.log("_phase fadeout");
           if (_imageInfo != null) {
             // Received image data. Begin placeholder fade-out.
             _controller.duration = widget.outDuration;
@@ -206,12 +208,14 @@ class _SakaAnimateState extends State<SakaAnimateImage>
               curve: widget.outCurve,
             );
             SakaLog.log("reverse");
-            _phase = ImagePhase.fadeOut;
+            _phase = ImagePhase.animateOuting;
             _controller.reverse(from: 1.0);
           }
           break;
-        case ImagePhase.fadeOut:
-          SakaLog.log("_phase fadeout");
+        case ImagePhase.animateOuting:
+          break;
+        case ImagePhase.animateInStart:
+          SakaLog.log("_phase fadein");
           if (_controller.status == AnimationStatus.dismissed) {
             // Done fading out placeholder. Begin target image fade-in.
             _controller.duration = widget.inDuration;
@@ -220,16 +224,15 @@ class _SakaAnimateState extends State<SakaAnimateImage>
               curve: widget.inCurve,
             );
             SakaLog.log("forward");
-            _phase = ImagePhase.fadeIn;
+            _phase = ImagePhase.animateIning;
             _controller.forward(from: 0.0);
           }
-          break;
-        case ImagePhase.fadeIn:
-          SakaLog.log("_phase fadein");
           if (_controller.status == AnimationStatus.completed) {
             // Done finding in new image.
             _phase = ImagePhase.completed;
           }
+          break;
+        case ImagePhase.animateIning:
           break;
         case ImagePhase.completed:
           // Nothing to do.
@@ -240,7 +243,6 @@ class _SakaAnimateState extends State<SakaAnimateImage>
 
   @override
   Widget build(BuildContext context) {
-    assert(_phase != ImagePhase.start);
     final ImageInfo imageInfo = _imageInfo;
     return RawImage(
       image: imageInfo?.image,
