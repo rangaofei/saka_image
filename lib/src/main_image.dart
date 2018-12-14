@@ -8,7 +8,7 @@ import 'package:saka_image/src/log.dart';
 import 'image_stream.dart';
 
 class SakaImage extends StatefulWidget {
-  final SakaImageProvider _image;
+  final SakaBaseImageProvider _image;
   final double width;
   final double height;
   final Color color;
@@ -42,7 +42,7 @@ class SakaImage extends StatefulWidget {
     String prePlaceHolder,
     Duration preDuration,
   }) : _image = SakaNetworkImage(
-          url,
+          url: url,
           prePlaceHolderPath: prePlaceHolder,
           errPlaceHolderPath: errPlaceHolder,
           duration: preDuration,
@@ -64,7 +64,7 @@ class SakaImage extends StatefulWidget {
     this.gaplessPlayback = false,
     this.filterQuality = FilterQuality.low,
     timeScale,
-  }) : _image = SakaAssetImage(url, timeScale: timeScale ?? 1.0);
+  }) : _image = SakaSpeedImage(url, timeScale: timeScale ?? 1.0);
 
   const SakaImage(
     this._image, {

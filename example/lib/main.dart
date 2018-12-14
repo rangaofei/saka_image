@@ -180,16 +180,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget getSakaAnimateImage() {
-    return SakaAnimateImage(
-      inDuration: Duration(seconds: 3),
-      outDuration: Duration(seconds: 4),
-      image: SakaNetworkImage(
-        "http://wx3.sinaimgcn/mw690/006ZrXHXgy1fvxfdb3h2fg30bq0fx1l3.gif",
-        prePlaceHolderPath: "images/timg.jpeg",
-        errPlaceHolderPath: "images/06b08.jpg",
-        duration: Duration(seconds: 5),
-        inDuration: Duration(seconds: 3),
-        outDuration: Duration(seconds: 4),
+    return Center(
+      child: SakaAnimateImage(
+        animateType: AnimateType.width,
+//        inDuration: Duration(seconds: 3),
+//        outDuration: Duration(seconds: 4),
+        fit: BoxFit.contain,
+        image: SakaNetworkImage(
+          url:
+              "http://wx3.sinaimgcn/mw690/006ZrXHXgy1fvxfdb3h2fg30bq0fx1l3.gif",
+          prePlaceHolderPath: "images/timg.jpeg",
+          errPlaceHolderPath: "images/06b08.jpg",
+          duration: Duration(seconds: 5),
+        ),
       ),
     );
   }

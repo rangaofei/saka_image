@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:saka_image/src/image_type.dart';
-import 'package:saka_image/src/log.dart';
 
 class ComposeImageInfo {
   final ui.Codec codec;
@@ -123,6 +122,8 @@ class SakaImageStream extends Diagnosticable {
   }
 }
 
+
+//just accept codec,
 abstract class SakaBaseStreamCompleter extends ImageStreamCompleter {
   final List<_ImageListenerPair> _listeners = <_ImageListenerPair>[];
   final InformationCollector _informationCollector;

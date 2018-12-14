@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:saka_image/saka_image.dart';
+import 'package:saka_image/src/image_provider.dart';
 import 'package:saka_image/src/image_stream.dart';
 import 'package:saka_image/src/image_type.dart';
 import 'package:saka_image/src/log.dart';
 import 'package:saka_image/src/raw_image.dart';
 
 class SakaAnimateImage extends StatefulWidget {
-  final SakaImageProvider image;
+  final SakaBaseComposeImage image;
   final Duration outDuration;
   final Curve outCurve;
   final Duration inDuration;
@@ -17,6 +17,7 @@ class SakaAnimateImage extends StatefulWidget {
   final AlignmentGeometry alignment;
   final ImageRepeat repeat;
   final bool matchTextDirection;
+  final AnimateType animateType;
 
   SakaAnimateImage({
     Key key,
@@ -27,10 +28,11 @@ class SakaAnimateImage extends StatefulWidget {
     this.inCurve = Curves.easeIn,
     this.width,
     this.height,
-    this.fit,
+    this.fit = BoxFit.contain,
     this.alignment = Alignment.center,
     this.repeat = ImageRepeat.noRepeat,
     this.matchTextDirection = false,
+    this.animateType = AnimateType.scale,
   })  : assert(image != null),
         assert(outDuration != null),
         assert(outCurve != null),
@@ -39,7 +41,10 @@ class SakaAnimateImage extends StatefulWidget {
         assert(alignment != null),
         assert(repeat != null),
         assert(matchTextDirection != null),
-        super(key: key);
+        super(key: key) {
+    image.inDuration = inDuration;
+    image.outDuration = outDuration;
+  }
 
   @override
   State<StatefulWidget> createState() {
@@ -256,7 +261,7 @@ class _SakaAnimateState extends State<SakaAnimateImage>
       repeat: widget.repeat,
       matchTextDirection: widget.matchTextDirection,
       value: _controller?.value,
-      animateType: AnimateType.scale,
+      animateType: widget.animateType,
     );
   }
 

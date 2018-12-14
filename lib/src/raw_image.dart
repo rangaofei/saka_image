@@ -46,7 +46,7 @@ class SakaRawImage extends StatefulWidget {
   ///
   /// The default varies based on the other fields. See the discussion at
   /// [paintImage].
-  final BoxFit fit;
+  BoxFit fit;
 
   /// How to align the image within its bounds.
   ///
@@ -150,10 +150,14 @@ class SakaRawImage extends StatefulWidget {
         }
         break;
       case AnimateType.width:
-        this.width = (value ?? 1.0) * (width ?? image?.width);
+        if (image != null) {
+          this.width = (value ?? 1.0) * (width ?? image.width);
+        }
         break;
       case AnimateType.height:
-        this.height = (value ?? 1.0) * (height ?? image?.height);
+        if (image != null) {
+          this.height = (value ?? 1.0) * (height ?? image.height);
+        }
         break;
     }
   }

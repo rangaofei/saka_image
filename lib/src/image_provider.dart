@@ -13,16 +13,17 @@ import 'package:saka_image/src/constant.dart';
 import 'package:saka_image/src/image_type.dart';
 import 'package:saka_image/src/log.dart';
 
-abstract class SakaImageProvider<T> extends ImageProvider<SakaImageProvider> {
+abstract class SakaBaseImageProvider<T>
+    extends ImageProvider<SakaBaseImageProvider> {
   final double scale;
 
-  SakaImageProvider({this.scale = 1.0});
+  SakaBaseImageProvider({this.scale = 1.0});
 
   SakaImageStream resolveStream(ImageConfiguration configuration) {
     assert(configuration != null);
     final SakaImageStream stream = SakaImageStream();
-    SakaImageProvider obtainedKey;
-    obtainKey(configuration).then<void>((SakaImageProvider key) {
+    SakaBaseImageProvider obtainedKey;
+    obtainKey(configuration).then<void>((SakaBaseImageProvider key) {
       obtainedKey = key;
       stream.setCompleter(PaintingBinding.instance.imageCache
           .putIfAbsent(key, () => load(key)));
@@ -46,23 +47,23 @@ abstract class SakaImageProvider<T> extends ImageProvider<SakaImageProvider> {
   }
 
   @override
-  Future<SakaImageProvider> obtainKey(ImageConfiguration configuration) {
-    return SynchronousFuture<SakaImageProvider>(this);
+  Future<SakaBaseImageProvider> obtainKey(ImageConfiguration configuration) {
+    return SynchronousFuture<SakaBaseImageProvider>(this);
   }
 }
 
-class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
+class SakaSpeedImage extends SakaBaseImageProvider<SakaSpeedImage> {
   final String imagePath;
   final double timeScale;
 
-  SakaAssetImage(this.imagePath, {scale, this.timeScale})
+  SakaSpeedImage(this.imagePath, {scale, this.timeScale})
       : assert(imagePath != null),
         assert(scale != 0),
         assert(timeScale != 0),
         super(scale: scale);
 
   @override
-  ImageStreamCompleter load(SakaImageProvider key) {
+  ImageStreamCompleter load(SakaBaseImageProvider key) {
     return SakaImageStreamCompleter(
         codec: _loadAsync(key),
         timeScale: timeScale,
@@ -73,7 +74,7 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
         });
   }
 
-  Future<ComposeImageInfo> _loadAsync(SakaAssetImage key) async {
+  Future<ComposeImageInfo> _loadAsync(SakaSpeedImage key) async {
     assert(key == this);
     var byteData = await rootBundle.load(imagePath);
     var imgList = byteData.buffer.asUint8List();
@@ -85,7 +86,7 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
   @override
   bool operator ==(dynamic other) {
     if (other.runtimeType != runtimeType) return false;
-    final SakaAssetImage typedOther = other;
+    final SakaSpeedImage typedOther = other;
     return imagePath == typedOther.imagePath &&
         scale == typedOther.scale &&
         timeScale == typedOther.timeScale;
@@ -99,37 +100,27 @@ class SakaAssetImage extends SakaImageProvider<SakaAssetImage> {
       '$runtimeType("$imagePath", scale: $scale,timeScale: $timeScale)';
 }
 
-/// a simple load net image with headers.
-/// if there is something wrong with the get url,it will never throw any exception.
-/// if you have set the [errPlaceHolderPath] it will use the err image in the asset
-/// if you  have not set the [errPlaceHolderPath], then it will show an transparent 1px png
-class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
+abstract class SakaBaseComposeImage
+    extends SakaBaseImageProvider<SakaBaseComposeImage> {
   final String url;
   final String prePlaceHolderPath;
-
-  // must be an assets path
-  final String errPlaceHolderPath;
   final double scale;
-  final Map<String, String> headers;
   Duration duration;
   Duration outDuration;
   Duration inDuration;
-  DateTime preLoadDuration;
+  DateTime _preLoadDuration;
 
-  SakaNetworkImage(
-    this.url, {
-    this.prePlaceHolderPath,
-    this.errPlaceHolderPath,
-    this.duration,
-    this.scale = 1.0,
-    this.headers,
-    this.outDuration = Duration.zero,
-    this.inDuration = Duration.zero,
-  })  : assert(url != null),
+  SakaBaseComposeImage(this.url,
+      {this.prePlaceHolderPath,
+      this.duration,
+      this.scale = 1.0,
+      this.outDuration = Duration.zero,
+      this.inDuration = Duration.zero})
+      : assert(url != null),
         assert(scale != null);
 
   @override
-  ImageStreamCompleter load(SakaImageProvider key) {
+  ImageStreamCompleter load(SakaBaseImageProvider key) {
     return SakaComposeImageStreamCompleter(
         prePlaceHolderCodec: _loadPreAsync(key),
         codec: _loadAsync(key),
@@ -142,8 +133,102 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
         });
   }
 
+  Future<ui.Codec> _getDelayResult(DateTime startTime, Uint8List data) async {
+    ui.Codec result =
+        await PaintingBinding.instance.instantiateImageCodec(data);
+    var stopTime = DateTime.now();
+    SakaLog.log(
+        "loading used time :${stopTime.difference(startTime).toString()}");
+    duration = duration - stopTime.difference(_preLoadDuration);
+    SakaLog.log("duration=${duration.toString()}");
+    return Future.delayed(
+      (duration ?? Duration(seconds: 0)),
+      () => result,
+    );
+  }
+
+  @protected
+  Future<ComposeImageInfo> _loadPreAsync(SakaNetworkImage key);
+
+  @protected
+  Future<ComposeImageInfo> _loadAsync(SakaNetworkImage key);
+}
+
+class SakaAssetImage extends SakaBaseComposeImage {
+  SakaAssetImage({
+    @required String url,
+    String prePlaceHolderPath,
+    Duration duration,
+    double scale = 1.0,
+  })  : assert(url != null),
+        assert(scale != null),
+        super(url,
+            prePlaceHolderPath: prePlaceHolderPath,
+            duration: duration,
+            scale: scale);
+
+  @override
+  Future<ComposeImageInfo> _loadAsync(SakaNetworkImage key) async {
+    assert(key == this);
+    var startTime = DateTime.now();
+
+    final ByteData bytes = await rootBundle.load(url);
+    final Uint8List data = bytes.buffer.asUint8List();
+    return ComposeImageInfo(
+        await _getDelayResult(startTime, data), ImageType.CORRECT_IMAGE);
+  }
+
+  @override
+  Future<ComposeImageInfo> _loadPreAsync(SakaNetworkImage key) async {
+    assert(key == this);
+    if (prePlaceHolderPath == null) {
+      return null;
+    }
+
+    var byteData = await rootBundle.load(prePlaceHolderPath);
+    var imgList = byteData.buffer.asUint8List();
+    ui.Codec result =
+        await PaintingBinding.instance.instantiateImageCodec(imgList);
+    _preLoadDuration = DateTime.now();
+    return ComposeImageInfo(result, ImageType.PRE_PLACE_HOLDER);
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    if (other.runtimeType != runtimeType) return false;
+    final SakaNetworkImage typedOther = other;
+    return url == typedOther.url && scale == typedOther.scale;
+  }
+
+  @override
+  int get hashCode => hashValues(url, scale);
+
+  @override
+  String toString() => '$runtimeType("$url", scale: $scale)';
+}
+
+class SakaNetworkImage extends SakaBaseComposeImage {
+  // must be an assets path
+  final String errPlaceHolderPath;
+  final Map<String, String> headers;
+
+  SakaNetworkImage({
+    @required String url,
+    String prePlaceHolderPath,
+    this.errPlaceHolderPath,
+    Duration duration,
+    double scale = 1.0,
+    this.headers,
+  })  : assert(url != null),
+        assert(scale != null),
+        super(url,
+            prePlaceHolderPath: prePlaceHolderPath,
+            duration: duration,
+            scale: scale);
+
   static final HttpClient _httpClient = HttpClient();
 
+  @override
   Future<ComposeImageInfo> _loadAsync(SakaNetworkImage key) async {
     assert(key == this);
     var startTime = DateTime.now();
@@ -178,6 +263,7 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
     }
   }
 
+  @override
   Future<ComposeImageInfo> _loadPreAsync(SakaNetworkImage key) async {
     assert(key == this);
     if (prePlaceHolderPath == null) {
@@ -188,7 +274,7 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
     var imgList = byteData.buffer.asUint8List();
     ui.Codec result =
         await PaintingBinding.instance.instantiateImageCodec(imgList);
-    preLoadDuration = DateTime.now();
+    _preLoadDuration = DateTime.now();
     return ComposeImageInfo(result, ImageType.PRE_PLACE_HOLDER);
   }
 
@@ -204,20 +290,6 @@ class SakaNetworkImage extends SakaImageProvider<SakaNetworkImage> {
       SakaLog.log("$errPlaceHolderPath::${e.toString()}");
       return _getDelayResult(startTime, Uint8List.fromList(Constant.emptyPng));
     }
-  }
-
-  Future<ui.Codec> _getDelayResult(DateTime startTime, Uint8List data) async {
-    ui.Codec result =
-        await PaintingBinding.instance.instantiateImageCodec(data);
-    var stopTime = DateTime.now();
-    SakaLog.log(
-        "loading used time :${stopTime.difference(startTime).toString()}");
-    duration = duration - stopTime.difference(preLoadDuration);
-    SakaLog.log("duration=${duration.toString()}");
-    return Future.delayed(
-      (duration ?? Duration(seconds: 0)),
-      () => result,
-    );
   }
 
   @override
