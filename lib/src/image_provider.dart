@@ -5,6 +5,8 @@ import 'dart:ui' as ui show Codec;
 import 'dart:ui' show hashValues;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
@@ -13,8 +15,7 @@ import 'package:saka_image/src/constant.dart';
 import 'package:saka_image/src/image_type.dart';
 import 'package:saka_image/src/log.dart';
 
-abstract class SakaBaseImageProvider<T>
-    extends ImageProvider<SakaBaseImageProvider> {
+abstract class SakaBaseImageProvider<T> extends ImageProvider<T> {
   final double scale;
 
   SakaBaseImageProvider({this.scale = 1.0});
@@ -22,8 +23,8 @@ abstract class SakaBaseImageProvider<T>
   SakaImageStream resolveStream(ImageConfiguration configuration) {
     assert(configuration != null);
     final SakaImageStream stream = SakaImageStream();
-    SakaBaseImageProvider obtainedKey;
-    obtainKey(configuration).then<void>((SakaBaseImageProvider key) {
+    T obtainedKey;
+    obtainKey(configuration).then<void>((T key) {
       obtainedKey = key;
       stream.setCompleter(PaintingBinding.instance.imageCache
           .putIfAbsent(key, () => load(key)));
@@ -47,23 +48,42 @@ abstract class SakaBaseImageProvider<T>
   }
 
   @override
-  Future<SakaBaseImageProvider> obtainKey(ImageConfiguration configuration) {
-    return SynchronousFuture<SakaBaseImageProvider>(this);
+  Future<T> obtainKey(ImageConfiguration configuration);
+}
+
+abstract class SakaAssetImageProvider
+    extends SakaBaseImageProvider<SakaAssetImageProvider> {
+  SakaAssetImageProvider({this.bundle, this.package, scale = 1.0})
+      : super(scale: scale);
+  final AssetBundle bundle;
+  final String package;
+
+  String get keyName;
+
+//  String get keyName =>
+//      package == null ? assetName : 'packages/$package/$assetName';
+
+  @override
+  Future<SakaAssetImageProvider> obtainKey(ImageConfiguration configuration) {
+    return SynchronousFuture<SakaAssetImageProvider>(this);
   }
 }
 
-class SakaSpeedImage extends SakaBaseImageProvider<SakaSpeedImage> {
-  final String imagePath;
+class SakaSpeedAssetImage extends SakaAssetImageProvider {
+  final String assetName;
   final double timeScale;
 
-  SakaSpeedImage(this.imagePath, {scale, this.timeScale})
-      : assert(imagePath != null),
+  String get keyName =>
+      package == null ? assetName : 'packages/$package/$assetName';
+
+  SakaSpeedAssetImage(this.assetName, {scale, this.timeScale})
+      : assert(assetName != null),
         assert(scale != 0),
         assert(timeScale != 0),
         super(scale: scale);
 
   @override
-  ImageStreamCompleter load(SakaBaseImageProvider key) {
+  ImageStreamCompleter load(SakaAssetImageProvider key) {
     return SakaImageStreamCompleter(
         codec: _loadAsync(key),
         timeScale: timeScale,
@@ -74,9 +94,8 @@ class SakaSpeedImage extends SakaBaseImageProvider<SakaSpeedImage> {
         });
   }
 
-  Future<ComposeImageInfo> _loadAsync(SakaSpeedImage key) async {
-    assert(key == this);
-    var byteData = await rootBundle.load(imagePath);
+  Future<ComposeImageInfo> _loadAsync(SakaAssetImageProvider key) async {
+    var byteData = await key.bundle.load(assetName);
     var imgList = byteData.buffer.asUint8List();
     return ComposeImageInfo(
         await PaintingBinding.instance.instantiateImageCodec(imgList),
@@ -86,22 +105,22 @@ class SakaSpeedImage extends SakaBaseImageProvider<SakaSpeedImage> {
   @override
   bool operator ==(dynamic other) {
     if (other.runtimeType != runtimeType) return false;
-    final SakaSpeedImage typedOther = other;
-    return imagePath == typedOther.imagePath &&
+    final SakaSpeedAssetImage typedOther = other;
+    return assetName == typedOther.assetName &&
         scale == typedOther.scale &&
         timeScale == typedOther.timeScale;
   }
 
   @override
-  int get hashCode => hashValues(imagePath, scale, timeScale);
+  int get hashCode => hashValues(assetName, scale, timeScale);
 
   @override
   String toString() =>
-      '$runtimeType("$imagePath", scale: $scale,timeScale: $timeScale)';
+      '$runtimeType("$assetName", scale: $scale,timeScale: $timeScale)';
 }
 
-abstract class SakaBaseComposeImage
-    extends SakaBaseImageProvider<SakaBaseComposeImage> {
+
+abstract class SakaBaseComposeImage<T> extends SakaBaseImageProvider<T> {
   final String url;
   final String prePlaceHolderPath;
   final double scale;
@@ -112,15 +131,15 @@ abstract class SakaBaseComposeImage
 
   SakaBaseComposeImage(this.url,
       {this.prePlaceHolderPath,
-      this.duration,
-      this.scale = 1.0,
-      this.outDuration = Duration.zero,
-      this.inDuration = Duration.zero})
+        this.duration,
+        this.scale = 1.0,
+        this.outDuration = Duration.zero,
+        this.inDuration = Duration.zero})
       : assert(url != null),
         assert(scale != null);
 
   @override
-  ImageStreamCompleter load(SakaBaseImageProvider key) {
+  ImageStreamCompleter load(SakaAssetImageProvider key) {
     return SakaComposeImageStreamCompleter(
         prePlaceHolderCodec: _loadPreAsync(key),
         codec: _loadAsync(key),
@@ -135,7 +154,7 @@ abstract class SakaBaseComposeImage
 
   Future<ui.Codec> _getDelayResult(DateTime startTime, Uint8List data) async {
     ui.Codec result =
-        await PaintingBinding.instance.instantiateImageCodec(data);
+    await PaintingBinding.instance.instantiateImageCodec(data);
     var stopTime = DateTime.now();
     SakaLog.log(
         "loading used time :${stopTime.difference(startTime).toString()}");
@@ -143,9 +162,10 @@ abstract class SakaBaseComposeImage
     SakaLog.log("duration=${duration.toString()}");
     return Future.delayed(
       (duration ?? Duration(seconds: 0)),
-      () => result,
+          () => result,
     );
   }
+
 
   @protected
   Future<ComposeImageInfo> _loadPreAsync(SakaNetworkImage key);
@@ -153,6 +173,9 @@ abstract class SakaBaseComposeImage
   @protected
   Future<ComposeImageInfo> _loadAsync(SakaNetworkImage key);
 }
+
+abstract class SakaBaseAssetComposeImage
+    extends SakaBaseImageProvider<AssetBundleImageKey> {}
 
 class SakaAssetImage extends SakaBaseComposeImage {
   SakaAssetImage({
@@ -305,3 +328,5 @@ class SakaNetworkImage extends SakaBaseComposeImage {
   @override
   String toString() => '$runtimeType("$url", scale: $scale)';
 }
+
+

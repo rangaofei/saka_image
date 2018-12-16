@@ -64,7 +64,7 @@ class SakaImage extends StatefulWidget {
     this.gaplessPlayback = false,
     this.filterQuality = FilterQuality.low,
     timeScale,
-  }) : _image = SakaSpeedImage(url, timeScale: timeScale ?? 1.0);
+  }) : _image = SakaSpeedAssetImage(url, timeScale: timeScale ?? 1.0);
 
   const SakaImage(
     this._image, {
