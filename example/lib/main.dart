@@ -186,10 +186,10 @@ class _MyHomePageState extends State<MyHomePage> {
 //        inDuration: Duration(seconds: 3),
 //        outDuration: Duration(seconds: 4),
         fit: BoxFit.contain,
-        image: SakaNetworkImage(
+        image: SakaAssetNetworkImage(
           url:
-              "http://wx3.sinaimgcn/mw690/006ZrXHXgy1fvxfdb3h2fg30bq0fx1l3.gif",
-          prePlaceHolderPath: "images/timg.jpeg",
+              "http://img.rangaofei.cn/01b42.jpg",
+          assetName: "images/timg.jpeg",
           errPlaceHolderPath: "images/06b08.jpg",
           duration: Duration(seconds: 5),
         ),

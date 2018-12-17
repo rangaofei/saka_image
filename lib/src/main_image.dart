@@ -41,9 +41,9 @@ class SakaImage extends StatefulWidget {
     String errPlaceHolder,
     String prePlaceHolder,
     Duration preDuration,
-  }) : _image = SakaNetworkImage(
+  }) : _image = SakaAssetNetworkImage(
           url: url,
-          prePlaceHolderPath: prePlaceHolder,
+          assetName: prePlaceHolder,
           errPlaceHolderPath: errPlaceHolder,
           duration: preDuration,
         );
