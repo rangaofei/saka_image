@@ -250,6 +250,7 @@ class _SakaAnimateState extends State<SakaAnimateImage>
   @override
   Widget build(BuildContext context) {
     final ImageInfo imageInfo = _imageInfo;
+
     return SakaRawImage(
       image: imageInfo?.image,
       width: widget.width,
