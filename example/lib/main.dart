@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saka_image/saka_image.dart';
+import 'package:saka_image_example/MyImageProvider.dart';
 
 void main() => runApp(MyApp());
 
@@ -90,7 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: getSakaAnimateImage());
+    return Scaffold(body: getTestImage());
   }
 
   Widget getAvatar() {
@@ -195,5 +196,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  Widget getTestImage(){
+    return Image(image:MyImageProvider("htt://img.rangaofei.cn/01b42.jpg"));
   }
 }
